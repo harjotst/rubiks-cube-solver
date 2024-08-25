@@ -1,7 +1,5 @@
 from enum import Enum
 
-Move = Enum('Move', ['U', 'U\''])
-
 class RubiksCube:
     def __init__(self):
         self._assemble_rubiks_cube()
@@ -29,6 +27,26 @@ class RubiksCube:
         print(f"       #{rc[5][1][0]}{rc[5][1][1]}{rc[5][1][2]}#")
         print(f"       #{rc[5][2][0]}{rc[5][2][1]}{rc[5][2][2]}#")
         print('       ########')
+
+    # rotate a face clockwise or anti-clockwise
+    def _rotate_face(self, face, clockwise=True):
+        i, rc = face, self.rubiks_cube
+        if clockwise:
+            rc[i][0][0], rc[i][0][2], rc[i][2][2], rc[i][2][0] = rc[i][2][0], rc[i][0][0], rc[i][0][2], rc[i][2][2]
+            rc[i][1][2], rc[i][2][1], rc[i][1][0], rc[i][0][1] = rc[i][0][1], rc[i][1][2], rc[i][2][1], rc[i][1][0]
+        else:
+            rc[i][2][0], rc[i][0][0], rc[i][0][2], rc[i][2][2] = rc[i][0][0], rc[i][0][2], rc[i][2][2], rc[i][2][0]
+            rc[i][0][1], rc[i][1][2], rc[i][2][1], rc[i][1][0] = rc[i][1][2], rc[i][2][1], rc[i][1][0], rc[i][0][1]
+
+    def _turn_row(self, row, clockwise=True):
+        if clockwise:
+            pass
+        else:
+            pass
+
+    # make
+    def make_move(self, move):
+        pass
 
 rubiks_cube = RubiksCube()
 
