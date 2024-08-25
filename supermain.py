@@ -1,19 +1,19 @@
 from enum import Enum
 
-Colour = Enum('Colour', ['WHITE', 'BLUE', 'YELLOW', 'GREEN', 'ORANGE', 'RED'])
-Move = Enum('Move', ['UP', 'DOWN', 'RIGHT', 'LEFT', 'FACE', 'BOTTOM', 'UP_PRIME', 'DOWN_PRIME', 'RIGHT_PRIME', 'LEFT_PRIME', 'FACE_PRIME', 'BOTTOM_PRIME'])
+Move = Enum('Move', ['U', 'U\''])
 
-class RubiksCubeSolver:
+class RubiksCube:
     def __init__(self):
         self._assemble_rubiks_cube()
 
     # declare and initialize rubiks cube data structure
     def _assemble_rubiks_cube(self):
         self.rubiks_cube = []
-        for colour in ['⬜️', '🟦', '🟨', '🟩', '🟧', '🟥']:
+        for colour in ['🟧', '🟦', '🟥', '🟩', '🟨', '⬜️']:
             face = [[colour, colour, colour]] * 3
             self.rubiks_cube.append(face)
 
+    # pretty print the rubiks cube
     def pretty_print(self):
         rc = self.rubiks_cube
         print('       ########')
@@ -30,8 +30,6 @@ class RubiksCubeSolver:
         print(f"       #{rc[5][2][0]}{rc[5][2][1]}{rc[5][2][2]}#")
         print('       ########')
 
+rubiks_cube = RubiksCube()
 
-
-rubiks_cube_solver = RubiksCubeSolver()
-
-rubiks_cube_solver.pretty_print()
+rubiks_cube.pretty_print()
