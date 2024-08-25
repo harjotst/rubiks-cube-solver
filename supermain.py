@@ -46,6 +46,17 @@ class RubiksCube:
         else:
             rc[1][r], rc[2][r], rc[3][r], rc[0][r] = rc[0][r], rc[1][r], rc[2][r], rc[3][r]
 
+    # turn a column clockwise or anti-clockwise
+    def _turn_column(self, column, clockwise=True):
+        c, rc = column, self.rubiks_cube
+        oc = 1 if c == 1 else 2 if c == 0 else 0
+        if clockwise:
+            for r in range(3):
+                rc[1][r][c], rc[5][r][c], rc[4][r][c], rc[3][r][oc] = rc[4][r][c], rc[1][r][c], rc[3][r][oc], rc[5][r][c]
+        else:
+            for r in range(3):
+                rc[4][r][c], rc[1][r][c], rc[3][r][oc], rc[5][r][c] = rc[1][r][c], rc[5][r][c], rc[4][r][c], rc[3][r][oc]
+    
     # make
     def make_move(self, move):
         pass
