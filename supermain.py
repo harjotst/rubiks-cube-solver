@@ -30,19 +30,21 @@ class RubiksCube:
 
     # rotate a face clockwise or anti-clockwise
     def _rotate_face(self, face, clockwise=True):
-        i, rc = face, self.rubiks_cube
+        f, rc = face, self.rubiks_cube
         if clockwise:
-            rc[i][0][0], rc[i][0][2], rc[i][2][2], rc[i][2][0] = rc[i][2][0], rc[i][0][0], rc[i][0][2], rc[i][2][2]
-            rc[i][1][2], rc[i][2][1], rc[i][1][0], rc[i][0][1] = rc[i][0][1], rc[i][1][2], rc[i][2][1], rc[i][1][0]
+            rc[f][0][0], rc[f][0][2], rc[f][2][2], rc[f][2][0] = rc[f][2][0], rc[f][0][0], rc[f][0][2], rc[f][2][2]
+            rc[f][1][2], rc[f][2][1], rc[f][1][0], rc[f][0][1] = rc[f][0][1], rc[f][1][2], rc[f][2][1], rc[f][1][0]
         else:
-            rc[i][2][0], rc[i][0][0], rc[i][0][2], rc[i][2][2] = rc[i][0][0], rc[i][0][2], rc[i][2][2], rc[i][2][0]
-            rc[i][0][1], rc[i][1][2], rc[i][2][1], rc[i][1][0] = rc[i][1][2], rc[i][2][1], rc[i][1][0], rc[i][0][1]
+            rc[f][2][0], rc[f][0][0], rc[f][0][2], rc[f][2][2] = rc[f][0][0], rc[f][0][2], rc[f][2][2], rc[f][2][0]
+            rc[f][0][1], rc[f][1][2], rc[f][2][1], rc[f][1][0] = rc[f][1][2], rc[f][2][1], rc[f][1][0], rc[f][0][1]
 
+    # turn a row clockwise or anti-clockwise
     def _turn_row(self, row, clockwise=True):
+        r, rc = row, self.rubiks_cube
         if clockwise:
-            pass
+            rc[0][r], rc[1][r], rc[2][r], rc[3][r] = rc[1][r], rc[2][r], rc[3][r], rc[0][r]
         else:
-            pass
+            rc[1][r], rc[2][r], rc[3][r], rc[0][r] = rc[0][r], rc[1][r], rc[2][r], rc[3][r]
 
     # make
     def make_move(self, move):
