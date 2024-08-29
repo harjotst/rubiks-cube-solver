@@ -6,7 +6,6 @@ class RubiksCube:
     def _assemble_rubiks_cube(self):
         self.rubiks_cube = []
         for i, colour in enumerate(['🟧', '🟦', '🟥', '🟩', '🟨', '⬜️']):
-        # for colour in [0, 1, 2, 3, 4, 5]:
             face = [[[colour, i] for _ in range(3)] for _ in range(3)]
             self.rubiks_cube.append(face)
 
@@ -294,3 +293,8 @@ class RubiksCube:
             self._rotate_row(1, times=2)
         elif move == 'S2':
             self._rotate_layer(1, times=2)
+
+    # def twist_corner(self, corner):
+    #     rc = self.rubiks_cube
+    #     c = corner
+    #     rc[c[0][0]][c[0][1]][c[0][2]], rc[c[1][0]][c[1][1]][c[1][2]], rc[c[2][0]][c[2][1]][c[2][2]] = rc[c[2][0]][c[2][1]][c[2][2]], rc[c[0][0]][c[0][1]][c[0][2]], rc[c[1][0]][c[1][1]][c[1][2]]
