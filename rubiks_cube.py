@@ -1,62 +1,45 @@
+import numpy as np
+
+from rubiks_cube_information import RubiksCubeInformation
+
 class RubiksCube:
-    def __init__(self):
-        self._assemble_rubiks_cube()
+    def __init__(self, rubiks_cube_information: RubiksCubeInformation, put_stickers=True):
+        self._assemble_rubiks_cube(put_stickers)
+        self.information = rubiks_cube_information
 
     # declare and initialize rubiks cube data structure
-    def _assemble_rubiks_cube(self):
-        self.rubiks_cube = []
-        for i, colour in enumerate(['🟧', '🟦', '🟥', '🟩', '🟨', '⬜️']):
-            face = [[[colour, i] for _ in range(3)] for _ in range(3)]
-            self.rubiks_cube.append(face)
-
-    # pretty print the rubiks cube
-    def pretty_print(self):
-        rc = self.rubiks_cube
-        print('       ########')
-        print(f"       #{rc[4][0][0][0]}{rc[4][0][1][0]}{rc[4][0][2][0]}#")
-        print(f"       #{rc[4][1][0][0]}{rc[4][1][1][0]}{rc[4][1][2][0]}#")
-        print(f"       #{rc[4][2][0][0]}{rc[4][2][1][0]}{rc[4][2][2][0]}#")
-        print('#' * 29)
-        print(f"#{rc[0][0][0][0]}{rc[0][0][1][0]}{rc[0][0][2][0]}#{rc[1][0][0][0]}{rc[1][0][1][0]}{rc[1][0][2][0]}#{rc[2][0][0][0]}{rc[2][0][1][0]}{rc[2][0][2][0]}#{rc[3][0][0][0]}{rc[3][0][1][0]}{rc[3][0][2][0]}#")
-        print(f"#{rc[0][1][0][0]}{rc[0][1][1][0]}{rc[0][1][2][0]}#{rc[1][1][0][0]}{rc[1][1][1][0]}{rc[1][1][2][0]}#{rc[2][1][0][0]}{rc[2][1][1][0]}{rc[2][1][2][0]}#{rc[3][1][0][0]}{rc[3][1][1][0]}{rc[3][1][2][0]}#")
-        print(f"#{rc[0][2][0][0]}{rc[0][2][1][0]}{rc[0][2][2][0]}#{rc[1][2][0][0]}{rc[1][2][1][0]}{rc[1][2][2][0]}#{rc[2][2][0][0]}{rc[2][2][1][0]}{rc[2][2][2][0]}#{rc[3][2][0][0]}{rc[3][2][1][0]}{rc[3][2][2][0]}#")
-        print('#' * 29)
-        print(f"       #{rc[5][0][0][0]}{rc[5][0][1][0]}{rc[5][0][2][0]}#")
-        print(f"       #{rc[5][1][0][0]}{rc[5][1][1][0]}{rc[5][1][2][0]}#")
-        print(f"       #{rc[5][2][0][0]}{rc[5][2][1][0]}{rc[5][2][2][0]}#")
-        print('       ########')
+    def _assemble_rubiks_cube(self, put_stickers):
+        if put_stickers:
+            self.faces = np.arange(6, dtype=np.uint8).reshape(6, 1, 1) * np.ones((1, 3, 3), dtype=np.uint8)
+        else:
+            self.faces = np.full((6, 3, 3), 6, dtype=np.uint8)
 
     # rotate a face clockwise or anti-clockwise. "clockwise" from the perspective of that face "facing" you.
     def _rotate_face(self, face, clockwise=True, times=1):
         for _ in range(times):
-            f, rc = face, self.rubiks_cube
             if clockwise:
-                rc[f][0][0], rc[f][0][2], rc[f][2][2], rc[f][2][0] = rc[f][2][0], rc[f][0][0], rc[f][0][2], rc[f][2][2]
-                rc[f][1][2], rc[f][2][1], rc[f][1][0], rc[f][0][1] = rc[f][0][1], rc[f][1][2], rc[f][2][1], rc[f][1][0]
+                self.faces[face] = np.rot90(self.faces[face], 3)
             else:
-                rc[f][2][0], rc[f][0][0], rc[f][0][2], rc[f][2][2] = rc[f][0][0], rc[f][0][2], rc[f][2][2], rc[f][2][0]
-                rc[f][0][1], rc[f][1][2], rc[f][2][1], rc[f][1][0] = rc[f][1][2], rc[f][2][1], rc[f][1][0], rc[f][0][1]
+                self.faces[face] = np.rot90(self.faces[face])
 
     # turn a row clockwise or anti-clockwise
     def _rotate_row(self, row, left=True, times=1):
         for _ in range(times):
-            r, rc = row, self.rubiks_cube
+            r, rc = row, self.faces
             if left:
-                rc[0][r], rc[1][r], rc[2][r], rc[3][r] = rc[1][r], rc[2][r], rc[3][r], rc[0][r]
+                rc[0, r], rc[1, r], rc[2, r], rc[3, r] = rc[1, r].copy(), rc[2, r].copy(), rc[3, r].copy(), rc[0, r].copy()
             else:
-                rc[1][r], rc[2][r], rc[3][r], rc[0][r] = rc[0][r], rc[1][r], rc[2][r], rc[3][r]
+                rc[1, r], rc[2, r], rc[3, r], rc[0, r] = rc[0, r].copy(), rc[1, r].copy(), rc[2, r].copy(), rc[3, r].copy()
 
     # turn a column clockwise or anti-clockwise
     def _rotate_column(self, column, down=True, times=1):
         for _ in range(times):
-            c, rc = column, self.rubiks_cube
+            c, fs = column, self.faces
             oc = 1 if c == 1 else 2 if c == 0 else 0
             if down:
-                for r in range(3):
-                    rc[1][r][c], rc[5][r][c], rc[3][2 - r][oc], rc[4][r][c] = rc[4][r][c], rc[1][r][c], rc[5][r][c], rc[3][2 - r][oc]
+                fs[1,:,c], fs[5,:,c], fs[3,:,oc], fs[4,:,c] = fs[4,:,c].copy(), fs[1,:,c].copy(), np.flipud(fs[5,:,c].copy()), np.flipud(fs[3,:,oc].copy())
             else:
-                for r in range(3):
-                    rc[4][r][c], rc[1][r][c], rc[5][r][c], rc[3][2 - r][oc] = rc[1][r][c], rc[5][r][c], rc[3][2 - r][oc], rc[4][r][c]
+                fs[4,:,c], fs[1,:,c], fs[5,:,c], fs[3,:,oc] = fs[1,:,c].copy(), fs[5,:,c].copy(), np.flipud(fs[3,:,oc].copy()), np.flipud(fs[4,:,c].copy())
 
     # returns left column, top row, right column, and bottom row indices for layer
     def _translate_layer_to_columns_and_rows(self, layer):
@@ -70,28 +53,37 @@ class RubiksCube:
     # turn a layer clockwise or anti-clockwise
     def _rotate_layer(self, layer, clockwise=True, times=1):
         for _ in range(times):
-            rc = self.rubiks_cube
+            fs = self.faces
             l_col, t_row, r_col, b_row = self._translate_layer_to_columns_and_rows(layer)
-            left_layer = [r[l_col] for r in rc[0]]
-            top_layer = list(rc[4][t_row])
-            right_layer = [r[r_col] for r in rc[2]]
-            bottom_layer = list(rc[5][b_row])
+            left_layer = fs[0,:,l_col].copy()
+            top_layer = fs[4,t_row].copy()
+            right_layer = fs[2,:,r_col].copy()
+            bottom_layer = fs[5,b_row].copy()
             if clockwise:
-                for r in range(3):
-                    rc[0][r][l_col] = bottom_layer[r]
-                left_layer.reverse()
-                rc[4][t_row] = left_layer
-                for r in range(3):
-                    rc[2][r][r_col] = top_layer[r]
-                right_layer.reverse()
-                rc[5][b_row] = right_layer
+                fs[0,:,l_col] = bottom_layer
+                fs[4,t_row] = np.flipud(left_layer)
+                fs[2,:,r_col] = top_layer
+                fs[5,b_row] = np.flipud(right_layer)
             else:
-                for r in range(3):
-                    rc[0][r][l_col] = top_layer[2 - r]
-                rc[4][t_row] = right_layer
-                for r in range(3):
-                    rc[2][r][r_col] = bottom_layer[2 - r]
-                rc[5][b_row] = left_layer
+                fs[0,:,l_col] = np.flipud(top_layer)
+                fs[4,t_row] = right_layer
+                fs[2,:,r_col] = np.flipud(bottom_layer)
+                fs[5,b_row] = left_layer
+
+    # get corner pointed to by indicies
+    def _get_corner_by_indices(self, corner_indices):
+        ci = corner_indices
+        tile_one = self.faces[ci[0][0], ci[0][1], ci[0][2]]
+        tile_two = self.faces[ci[1][0], ci[1][1], ci[1][2]]
+        tile_three = self.faces[ci[2][0], ci[2][1], ci[2][2]]
+        return [tile_one, tile_two, tile_three]
+
+    # set corner pointed to by indices, certain colours
+    def _set_corner_by_indices(self, corner_indices, tile_colours):
+        ci = corner_indices
+        self.faces[ci[0][0], ci[0][1], ci[0][2]] = tile_colours[0]
+        self.faces[ci[1][0], ci[1][1], ci[1][2]] = tile_colours[1]
+        self.faces[ci[2][0], ci[2][1], ci[2][2]] = tile_colours[2]
 
     # make a move
     def make_move(self, move):
@@ -294,7 +286,43 @@ class RubiksCube:
         elif move == 'S2':
             self._rotate_layer(1, times=2)
 
-    # def twist_corner(self, corner):
-    #     rc = self.rubiks_cube
-    #     c = corner
-    #     rc[c[0][0]][c[0][1]][c[0][2]], rc[c[1][0]][c[1][1]][c[1][2]], rc[c[2][0]][c[2][1]][c[2][2]] = rc[c[2][0]][c[2][1]][c[2][2]], rc[c[0][0]][c[0][1]][c[0][2]], rc[c[1][0]][c[1][1]][c[1][2]]
+        # pretty print the rubiks cube
+    
+    # print rubiks cube in 2d representation
+    def pretty_print(self):
+        fs = self.faces
+        pp = f"""       ########
+       #{fs[4][0][0]}{fs[4][0][1]}{fs[4][0][2]}#
+       #{fs[4][1][0]}{fs[4][1][1]}{fs[4][1][2]}#
+       #{fs[4][2][0]}{fs[4][2][1]}{fs[4][2][2]}#
+{'#' * 29}
+#{fs[0][0][0]}{fs[0][0][1]}{fs[0][0][2]}#{fs[1][0][0]}{fs[1][0][1]}{fs[1][0][2]}#{fs[2][0][0]}{fs[2][0][1]}{fs[2][0][2]}#{fs[3][0][0]}{fs[3][0][1]}{fs[3][0][2]}#
+#{fs[0][1][0]}{fs[0][1][1]}{fs[0][1][2]}#{fs[1][1][0]}{fs[1][1][1]}{fs[1][1][2]}#{fs[2][1][0]}{fs[2][1][1]}{fs[2][1][2]}#{fs[3][1][0]}{fs[3][1][1]}{fs[3][1][2]}#
+#{fs[0][2][0]}{fs[0][2][1]}{fs[0][2][2]}#{fs[1][2][0]}{fs[1][2][1]}{fs[1][2][2]}#{fs[2][2][0]}{fs[2][2][1]}{fs[2][2][2]}#{fs[3][2][0]}{fs[3][2][1]}{fs[3][2][2]}#
+{'#' * 29}
+       #{fs[5][0][0]}{fs[5][0][1]}{fs[5][0][2]}#
+       #{fs[5][1][0]}{fs[5][1][1]}{fs[5][1][2]}#
+       #{fs[5][2][0]}{fs[5][2][1]}{fs[5][2][2]}#
+       ########"""
+        pp = pp.replace('0', '🟧').replace('1', '🟦').replace('2', '🟥').replace('3', '🟩').replace('4', '🟨').replace('5', '⬜️').replace('6', '⬛️')
+        print(pp)
+
+    # return corner type at corner position
+    def get_corner_type(self, corner_position):
+        corner_indicies = self.information.corner_indices[str(corner_position)]
+        corner = self._get_corner_by_indices(corner_indicies)
+        corner_product = str((corner[0] + 1) * (corner[1] + 1) * (corner[2] + 1))
+        return self.information.corner_product_to_type[corner_product]
+
+    # set corner type and orientation at corner position
+    # this method doesn't check if corner type already exists in rubiks cube. user discretion advised.
+    def set_corner_type(self, corner_position, corner_type, orientation):
+        corner_indicies = self.information.corner_indices[str(corner_position)]
+        tile_colours = self.information.corner_orientations[str(corner_type)][str(corner_position)][orientation]
+        self._set_corner_by_indices(corner_indicies, tile_colours)
+
+    # def flip_edge(self, edge, orientation):
+    #     pass
+
+    # def twist_corner(self, corner, orientation):
+    #    pass
