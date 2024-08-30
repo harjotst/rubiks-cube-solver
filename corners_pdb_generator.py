@@ -1,9 +1,7 @@
 from rubiks_cube import RubiksCube
+from rubiks_cube_pattern_key import RubiksCubePatternKey
+
 from collections import deque
-
-import json
-
-from rubiks_cube_information import RubiksCubeInformation
 
 class CornerPositionOrientationMapGenerator:
     def __init__(self, solved_rubiks_cube: RubiksCube):
@@ -76,12 +74,12 @@ class CornerPositionOrientationMapGenerator:
         return corners_dict
 
 class CornersPDBGenerator:
-    def __init__(self, target: RubiksCube, rubiks_cube_information: RubiksCubeInformation):
-        self.goal = target
-        self.information = rubiks_cube_information
+    def __init__(self, target: RubiksCube, rubiks_cube_pattern_key: RubiksCubePatternKey):
+        self.target = target
+        self.pattern_key = rubiks_cube_pattern_key
 
     def _get_corners(self):
-        rb = self.goal.faces
+        rb = self.target.faces
         corners = []
         corners.append([rb[0][0][2], rb[1][0][0], rb[4][2][0]])
         corners.append([rb[1][0][2], rb[2][0][0], rb[4][2][2]])
@@ -117,15 +115,7 @@ class CornersPDBGenerator:
                 return i
 
     def _convert_corners_to_key(self):
-        key = 0
-        corners = self._get_corners()
-        for i, corner in enumerate(corners):
-            sorted_corner = sorted(corner)
-            corner_type = self._determine_corner(sorted_corner)
-            orientation = self._determine_orientation(corner_type, i, corner)
-            key <<= 5
-            key |= ((orientation & 0b11) << 3) | (corner_type & 0b111)
-        return key
+        
 
     def generate_corners_pdb(self):
         key = self._convert_corners_to_key()

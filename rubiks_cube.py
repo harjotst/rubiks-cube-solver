@@ -313,6 +313,14 @@ class RubiksCube:
         corner = self._get_corner_by_indices(corner_indicies)
         corner_product = str((corner[0] + 1) * (corner[1] + 1) * (corner[2] + 1))
         return self.information.corner_product_to_type[corner_product]
+    
+    # return orientation of corner at position
+    def get_corner_orientation(self, corner_position):
+        corner_type = self.get_corner_type(corner_position)
+        orientations = self.information.corner_orientations[str(corner_type)][str(corner_position)]
+        corner_indicies = self.information.corner_indices[str(corner_position)]
+        corner = self._get_corner_by_indices(corner_indicies)
+        return orientations.index(corner)
 
     # set corner type and orientation at corner position
     # this method doesn't check if corner type already exists in rubiks cube. user discretion advised.
