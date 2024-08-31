@@ -4,22 +4,26 @@ class RubiksCubePatternKey:
     def __init__(self, rubiks_cube_information):
         self.information = rubiks_cube_information
 
+    def is_corner_key_solved(self, corner_key):
+        
+        pass
+
     # create 40 bit key from corner positions and orientations 
     # each 5 bits in the key correspond to corner type and orientation
     def from_rubiks_cube_to_corners_key(self, rubiks_cube: RubiksCube):
-        key = 0
+        corner_key = 0
         for corner_position in range(8):
             corner_type = rubiks_cube.get_corner_type(corner_position)
             orientation = rubiks_cube.get_corner_orientation(corner_position)
-            key <<= 5
-            key |= ((orientation & 0b11) << 3) | (corner_type & 0b111)
-        return key
+            corner_key <<= 5
+            corner_key |= ((orientation & 0b11) << 3) | (corner_type & 0b111)
+        return corner_key
 
     # load corner type positions and orientations from 40 bit key
-    def from_corners_key_to_rubiks_cube(self, key):
+    def from_corners_key_to_rubiks_cube(self, corner_key):
         rubiks_cube = RubiksCube(self.information, False)
         for i in range(0, 40, 5):
-            chunk = (key >> (35 - i)) & 0b11111
+            chunk = (corner_key >> (35 - i)) & 0b11111
             corner_position = int(i / 5)
             corner_type = chunk & 0b111
             orientation = (chunk & 0b11000) >> 3

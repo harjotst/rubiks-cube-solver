@@ -1,4 +1,5 @@
 from rubiks_cube import RubiksCube
+from rubiks_cube_information import RubiksCubeInformation
 from rubiks_cube_pattern_key import RubiksCubePatternKey
 
 from collections import deque
@@ -74,50 +75,60 @@ class CornerPositionOrientationMapGenerator:
         return corners_dict
 
 class CornersPDBGenerator:
-    def __init__(self, target: RubiksCube, rubiks_cube_pattern_key: RubiksCubePatternKey):
-        self.target = target
-        self.pattern_key = rubiks_cube_pattern_key
+    def __init__(self, rubiks_cube_information: RubiksCubeInformation):
+        self.information = rubiks_cube_information
+        self.pattern_key = RubiksCubePatternKey(self.information)
+        self.bfs = deque([])
+        self.seen = set()
 
-    def _get_corners(self):
-        rb = self.target.faces
-        corners = []
-        corners.append([rb[0][0][2], rb[1][0][0], rb[4][2][0]])
-        corners.append([rb[1][0][2], rb[2][0][0], rb[4][2][2]])
-        corners.append([rb[0][2][2], rb[1][2][0], rb[5][0][0]])
-        corners.append([rb[1][2][2], rb[2][2][0], rb[5][0][2]])
-        corners.append([rb[0][0][0], rb[3][0][2], rb[4][0][0]])
-        corners.append([rb[2][0][2], rb[3][0][0], rb[4][0][2]])
-        corners.append([rb[0][2][0], rb[3][2][2], rb[5][2][0]])
-        corners.append([rb[2][2][2], rb[3][2][0], rb[5][2][2]])
-        return corners
+        self._initialize_solved_bfs_and_seen()
 
-    def _determine_corner(self, sorted_corner):
-        if sorted_corner == [0, 1, 4]:
-            return 0
-        elif sorted_corner == [1, 2, 4]:
-            return 1
-        elif sorted_corner == [0, 1, 5]:
-            return 2
-        elif sorted_corner == [1, 2, 5]:
-            return 3
-        elif sorted_corner == [0, 3, 4]:
-            return 4
-        elif sorted_corner == [2, 3, 4]:
-            return 5
-        elif sorted_corner == [0, 3, 5]:
-            return 6
-        elif sorted_corner == [2, 3, 5]:
-            return 7
+        self.moves = ['U', 'D', 'R', 'L', 'F', 'B', 'U\'', 'D\'', 'R\'', 'L\'', 'F\'', 'B\'', 'U2', 'D2', 'R2', 'L2', 'F2', 'B2']
+        self.possible_corner_permutations = 88179840
 
-    def _determine_orientation(self, corner_type, position, corner):
-        for i, corner_orientation in enumerate(self.information.corner_orientations[f'{corner_type}'][f'{position}']):
-            if corner == corner_orientation:
-                return i
+    def _initialize_solved_bfs_and_seen(self):
+        rubiks_cube = RubiksCube(self.information)
 
-    def _convert_corners_to_key(self):
-        
+        for i in range(4):
+            for _ in range(i):
+                rubiks_cube.make_move('x')
+            for j in range(4):
+                for _ in range(j):
+                    rubiks_cube.make_move('y')
+                for k in range(4):
+                    for _ in range(k):
+                        rubiks_cube.make_move('z')
+                    pattern_key = self.pattern_key.from_rubiks_cube_to_corners_key(rubiks_cube)
+                    if pattern_key not in self.seen:
+                        self.seen.add(pattern_key)
+                        self.bfs.appendleft((pattern_key, None, 0))
+                    for _ in range(k):
+                        rubiks_cube.undo_last_move()
+                for _ in range(j):
+                    rubiks_cube.undo_last_move()
+            for _ in range(i):
+                rubiks_cube.undo_last_move()
+
+    def _get_legal_moves(self, previous_move=None):
+        if previous_move:
+            return list(filter(lambda move: not move.startswith(previous_move[0]), self.moves))
+        return self.moves
 
     def generate_corners_pdb(self):
-        key = self._convert_corners_to_key()
+        index = 1
+        while self.bfs:
+            corner_permutation_key, last_move, number_of_moves_before = self.bfs.pop()
+            print(index, corner_permutation_key, number_of_moves_before)
+            corner_permutation_rubiks_cube = self.pattern_key.from_corners_key_to_rubiks_cube(corner_permutation_key)
+            legal_moves = self._get_legal_moves(last_move)
 
-        return key
+            for legal_move in legal_moves:
+                corner_permutation_rubiks_cube.make_move(legal_move)
+
+                corner_permutation_corners_key = self.pattern_key.from_rubiks_cube_to_corners_key(corner_permutation_rubiks_cube)
+                if corner_permutation_corners_key not in self.seen:
+                    self.seen.add(corner_permutation_corners_key)
+                    self.bfs.appendleft((corner_permutation_corners_key, legal_move, number_of_moves_before + 1))
+
+                corner_permutation_rubiks_cube.undo_last_move()
+            index += 1

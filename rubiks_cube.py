@@ -6,6 +6,7 @@ class RubiksCube:
     def __init__(self, rubiks_cube_information: RubiksCubeInformation, put_stickers=True):
         self._assemble_rubiks_cube(put_stickers)
         self.information = rubiks_cube_information
+        self.moves = []
 
     # declare and initialize rubiks cube data structure
     def _assemble_rubiks_cube(self, put_stickers):
@@ -86,7 +87,7 @@ class RubiksCube:
         self.faces[ci[2][0], ci[2][1], ci[2][2]] = tile_colours[2]
 
     # make a move
-    def make_move(self, move):
+    def make_move(self, move, record_move=True):
         if move == 'U':
             self._rotate_row(0)
             self._rotate_face(4)
@@ -285,9 +286,16 @@ class RubiksCube:
             self._rotate_row(1, times=2)
         elif move == 'S2':
             self._rotate_layer(1, times=2)
+        else:
+            return
+        if record_move:
+            self.moves.append(move)
 
-        # pretty print the rubiks cube
-    
+    def undo_last_move(self):
+        last_move = self.moves.pop()
+        opposite_move = self.information.opposite_moves[last_move]
+        self.make_move(opposite_move, False)
+
     # print rubiks cube in 2d representation
     def pretty_print(self):
         fs = self.faces
@@ -313,7 +321,7 @@ class RubiksCube:
         corner = self._get_corner_by_indices(corner_indicies)
         corner_product = str((corner[0] + 1) * (corner[1] + 1) * (corner[2] + 1))
         return self.information.corner_product_to_type[corner_product]
-    
+
     # return orientation of corner at position
     def get_corner_orientation(self, corner_position):
         corner_type = self.get_corner_type(corner_position)
