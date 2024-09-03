@@ -84,7 +84,6 @@ class CornersPDBGenerator:
         self._initialize_solved_bfs_and_seen()
 
         self.moves = ['U', 'D', 'R', 'L', 'F', 'B', 'U\'', 'D\'', 'R\'', 'L\'', 'F\'', 'B\'', 'U2', 'D2', 'R2', 'L2', 'F2', 'B2']
-        self.possible_corner_permutations = 88179840
 
     def _initialize_solved_bfs_and_seen(self):
         rubiks_cube = RubiksCube(self.information)
@@ -115,10 +114,9 @@ class CornersPDBGenerator:
         return self.moves
 
     def generate_corners_pdb(self):
-        index = 1
         while self.bfs:
             corner_permutation_key, last_move, number_of_moves_before = self.bfs.pop()
-            print(index, corner_permutation_key, number_of_moves_before)
+            print(corner_permutation_key, number_of_moves_before)
             corner_permutation_rubiks_cube = self.pattern_key.from_corners_key_to_rubiks_cube(corner_permutation_key)
             legal_moves = self._get_legal_moves(last_move)
 
@@ -131,4 +129,3 @@ class CornersPDBGenerator:
                     self.bfs.appendleft((corner_permutation_corners_key, legal_move, number_of_moves_before + 1))
 
                 corner_permutation_rubiks_cube.undo_last_move()
-            index += 1

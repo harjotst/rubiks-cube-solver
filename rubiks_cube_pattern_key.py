@@ -4,12 +4,8 @@ class RubiksCubePatternKey:
     def __init__(self, rubiks_cube_information):
         self.information = rubiks_cube_information
 
-    def is_corner_key_solved(self, corner_key):
-        
-        pass
-
     # create 40 bit key from corner positions and orientations 
-    # each 5 bits in the key correspond to corner type and orientation
+    # each 5 bits in the key correspond to corner type (3 bits) and orientation (2 bits)
     def from_rubiks_cube_to_corners_key(self, rubiks_cube: RubiksCube):
         corner_key = 0
         for corner_position in range(8):
@@ -18,6 +14,17 @@ class RubiksCubePatternKey:
             corner_key <<= 5
             corner_key |= ((orientation & 0b11) << 3) | (corner_type & 0b111)
         return corner_key
+    
+    # create 60 bit key from edge positions and orientations 
+    # each 5 bits in the key correspond to edge type (4 bits) and orientation (1 bit)
+    def from_rubiks_cube_to_edges_key(self, rubiks_cube: RubiksCube):
+        edge_key = 0
+        for edge_position in range(12):
+            edge_type = rubiks_cube.get_edge_type(edge_position)
+            orientation = rubiks_cube.get_edge_orientation(edge_position)
+            edge_key <<= 5
+            edge_key |= ((orientation & 0b1) << 4) | (edge_type & 0b1111)
+        return edge_key
 
     # load corner type positions and orientations from 40 bit key
     def from_corners_key_to_rubiks_cube(self, corner_key):
@@ -28,6 +35,17 @@ class RubiksCubePatternKey:
             corner_type = chunk & 0b111
             orientation = (chunk & 0b11000) >> 3
             rubiks_cube.set_corner_type(corner_position, corner_type, orientation)
+        return rubiks_cube
+    
+    # load edge type positions and orientations from 60 bit key
+    def from_edges_key_to_rubiks_cube(self, edge_key):
+        rubiks_cube = RubiksCube(self.information, False)
+        for i in range(0, 60, 5):
+            chunk = (edge_key >> (55 - i)) & 0b11111
+            edge_position = int(i / 5)
+            edge_type = chunk & 0b1111
+            orientation = (chunk & 0b10000) >> 4
+            rubiks_cube.set_edge_type(edge_position, edge_type, orientation)
         return rubiks_cube
 
     def print_corner_key(self, key):

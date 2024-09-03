@@ -1,18 +1,23 @@
 import json
 
-from corners_pdb_generator import CornersPDBGenerator
-from rubiks_cube_pattern_key import RubiksCubePatternKey
+from edges_pdb_generator import EdgesPDBGenerator
 from rubiks_cube import RubiksCube
 from rubiks_cube_information import RubiksCubeInformation
 
 rubiks_cube_information = RubiksCubeInformation()
 
-rubiks_cube = RubiksCube(rubiks_cube_information)
+# rubiks_cube = RubiksCube(rubiks_cube_information)
 
-rubiks_cube_pattern_key = RubiksCubePatternKey(rubiks_cube_information)
+# rubiks_cube.pretty_print()
 
-# rubiks_cube_pattern_key.from_corners_key_to_rubiks_cube(34532047215).pretty_print()
+# rubiks_cube.make_move('z')
 
-corners_pdb_generator = CornersPDBGenerator(rubiks_cube_information)
+# rubiks_cube.pretty_print()
 
-corners_pdb_generator.generate_corners_pdb()
+edges_pdb_generator = EdgesPDBGenerator(rubiks_cube_information)
+
+edges_pdb_generator.generate_edges_pdb()
+
+# something = EdgePositionOrientationMapGenerator(rubiks_cube_information)
+
+# print(json.dumps(something.generate_map(), indent=2))

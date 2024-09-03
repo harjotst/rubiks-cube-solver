@@ -291,7 +291,8 @@ class RubiksCube:
         if record_move:
             self.moves.append(move)
 
-    def undo_last_move(self):
+    # undo the last move
+    def undo_last_move(self): 
         last_move = self.moves.pop()
         opposite_move = self.information.opposite_moves[last_move]
         self.make_move(opposite_move, False)
@@ -337,8 +338,39 @@ class RubiksCube:
         tile_colours = self.information.corner_orientations[str(corner_type)][str(corner_position)][orientation]
         self._set_corner_by_indices(corner_indicies, tile_colours)
 
-    # def flip_edge(self, edge, orientation):
-    #     pass
+    # get edge pointed to by indicies
+    def _get_edge_by_indices(self, edge_indices):
+        ei = edge_indices
+        tile_one = self.faces[ei[0][0], ei[0][1], ei[0][2]]
+        tile_two = self.faces[ei[1][0], ei[1][1], ei[1][2]]
+        return [tile_one, tile_two]
 
-    # def twist_corner(self, corner, orientation):
-    #    pass
+    # return edge type at edge position
+    def get_edge_type(self, edge_position):
+        edge_indicies = self.information.edge_positions_to_indices[str(edge_position)]
+        edge = self._get_edge_by_indices(edge_indicies)
+        edge_product = str((edge[0] + 3) * (edge[1] + 3))
+        if edge_product == 81:
+            print('here')
+        return self.information.edge_face_product_to_type[edge_product]
+
+    # return orientation of edge at position
+    def get_edge_orientation(self, edge_position):
+        edge_type = self.get_edge_type(edge_position)
+        orientations = self.information.edge_orientations[str(edge_type)][str(edge_position)]
+        edge_indicies = self.information.edge_positions_to_indices[str(edge_position)]
+        edge = self._get_edge_by_indices(edge_indicies)
+        return orientations.index(edge)
+
+    # set edge pointed to by indices, certain colours
+    def _set_edge_by_indices(self, edge_indices, tile_colours):
+        ei = edge_indices
+        self.faces[ei[0][0], ei[0][1], ei[0][2]] = tile_colours[0]
+        self.faces[ei[1][0], ei[1][1], ei[1][2]] = tile_colours[1]
+
+    # set edge type and orientation at edge position
+    # this method doesn't check if edge type already exists in rubiks cube. user discretion advised.
+    def set_edge_type(self, edge_position, edge_type, orientation):
+        edge_indicies = self.information.edge_positions_to_indices[str(edge_position)]
+        tile_colours = self.information.edge_orientations[str(edge_type)][str(edge_position)][orientation]
+        self._set_edge_by_indices(edge_indicies, tile_colours)
