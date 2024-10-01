@@ -350,8 +350,6 @@ class RubiksCube:
         edge_indicies = self.information.edge_positions_to_indices[str(edge_position)]
         edge = self._get_edge_by_indices(edge_indicies)
         edge_product = str((edge[0] + 3) * (edge[1] + 3))
-        if edge_product == 81:
-            print('here')
         return self.information.edge_face_product_to_type[edge_product]
 
     # return orientation of edge at position

@@ -1,5 +1,11 @@
-/.venv/
-/__pycache__/
-/heuristics/
-/else.txt
-/something.txt
+**/.venv/
+**/.DS_Store/
+**/.build/
+**/.vscode/
+**/.idea/
+**/__pycache__/
+**/heuristics/
+**/else.txt
+**/solver/cmake-build-debug
+**/build/
+**/solver/.clang-format

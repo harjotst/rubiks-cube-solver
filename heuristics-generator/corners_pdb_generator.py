@@ -88,25 +88,10 @@ class CornersPDBGenerator:
     def _initialize_solved_bfs_and_seen(self):
         rubiks_cube = RubiksCube(self.information)
 
-        for i in range(4):
-            for _ in range(i):
-                rubiks_cube.make_move('x')
-            for j in range(4):
-                for _ in range(j):
-                    rubiks_cube.make_move('y')
-                for k in range(4):
-                    for _ in range(k):
-                        rubiks_cube.make_move('z')
-                    pattern_key = self.pattern_key.from_rubiks_cube_to_corners_key(rubiks_cube)
-                    if pattern_key not in self.seen:
-                        self.seen.add(pattern_key)
-                        self.bfs.appendleft((pattern_key, None, 0))
-                    for _ in range(k):
-                        rubiks_cube.undo_last_move()
-                for _ in range(j):
-                    rubiks_cube.undo_last_move()
-            for _ in range(i):
-                rubiks_cube.undo_last_move()
+        corners_pattern_key = self.pattern_key.from_rubiks_cube_to_corners_key(rubiks_cube)
+
+        self.seen.add(corners_pattern_key)
+        self.bfs.appendleft((corners_pattern_key, None, 0))
 
     def _get_legal_moves(self, previous_move=None):
         if previous_move:
@@ -115,17 +100,16 @@ class CornersPDBGenerator:
 
     def generate_corners_pdb(self):
         while self.bfs:
-            corner_permutation_key, last_move, number_of_moves_before = self.bfs.pop()
-            print(corner_permutation_key, number_of_moves_before)
-            corner_permutation_rubiks_cube = self.pattern_key.from_corners_key_to_rubiks_cube(corner_permutation_key)
+            corners_permutation_key, last_move, number_of_moves_before = self.bfs.pop()
+            print(corners_permutation_key, number_of_moves_before)
+            corners_permutation_rubiks_cube = self.pattern_key.from_corners_key_to_rubiks_cube(corners_permutation_key)
             legal_moves = self._get_legal_moves(last_move)
 
             for legal_move in legal_moves:
-                corner_permutation_rubiks_cube.make_move(legal_move)
+                corners_permutation_rubiks_cube.make_move(legal_move)
+                corners_key = self.pattern_key.from_rubiks_cube_to_corners_key(corners_permutation_rubiks_cube)
+                if corners_key not in self.seen:
+                    self.seen.add(corners_key)
+                    self.bfs.appendleft((corners_key, legal_move, number_of_moves_before + 1))
 
-                corner_permutation_corners_key = self.pattern_key.from_rubiks_cube_to_corners_key(corner_permutation_rubiks_cube)
-                if corner_permutation_corners_key not in self.seen:
-                    self.seen.add(corner_permutation_corners_key)
-                    self.bfs.appendleft((corner_permutation_corners_key, legal_move, number_of_moves_before + 1))
-
-                corner_permutation_rubiks_cube.undo_last_move()
+                corners_permutation_rubiks_cube.undo_last_move()
