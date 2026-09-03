@@ -376,17 +376,30 @@ function randomScrambleText(seed) {
 
 test('keyboard shortcuts stay out of the way of focused controls and can be switched off', async ({ page }) => {
   await open(page);
-  await page.locator('#random-scramble').focus();
+  // Letters work even when a button has focus (the normal state after a click)...
+  await page.click('button[data-move="R"]');
   await page.keyboard.press('u');
-  await page.keyboard.press('Shift+R');
   await settled(page);
-  expect(await page.evaluate(() => window.__cubeApp.state.history)).toEqual([]);
+  expect(await page.evaluate(() => window.__cubeApp.state.history)).toEqual(['R', 'U']);
+  // ...but never inside a text field.
+  await page.locator('#scramble-input').focus();
+  await page.keyboard.press('f');
+  await settled(page);
+  expect(await page.evaluate(() => window.__cubeApp.state.history)).toEqual(['R', 'U']);
+  await page.click('#reset-cube');
   await page.locator('#scene').focus();
   await page.keyboard.press('u');
   await settled(page);
   expect(await page.evaluate(() => window.__cubeApp.state.history)).toEqual(['U']);
   await page.click('#solve');
   await expect(page.locator('#solution')).toBeVisible();
+  // Arrows step through the solution straight after solving (focus is on Play).
+  await page.keyboard.press('ArrowRight');
+  await settled(page);
+  expect(await page.evaluate(() => window.__cubeApp.state.solution.position)).toBe(1);
+  await page.keyboard.press('ArrowLeft');
+  await settled(page);
+  expect(await page.evaluate(() => window.__cubeApp.state.solution.position)).toBe(0);
   // Space on a focused button activates that button, not playback.
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.locator('#copy-solution').focus();
@@ -421,4 +434,63 @@ test('messages are exposed as status regions and the in-page anchor is not mista
   await expect(page.locator('#solution')).toBeVisible();
   await expect(page.locator('#announcer')).toContainText('Solution found');
   expect(await page.evaluate(() => document.activeElement && document.activeElement.id)).toBe('player-play');
+});
+
+test('rapid jumps and play/pause never pile up loops or freeze the page', async ({ page }) => {
+  await open(page, '#' + encodeURIComponent(randomScrambleText(0)));
+  await page.waitForFunction(() => window.__cubeApp.state.history.length === 25);
+  await settled(page);
+  await page.selectOption('#effort', 'quick');
+  await page.click('#solve');
+  await expect(page.locator('#solution')).toBeVisible();
+  const chips = page.locator('#solution-moves .chip');
+  const count = await chips.count();
+  // Queue a few animated steps, then jump both ways while they are still playing.
+  await page.click('#player-next');
+  await page.click('#player-next');
+  await page.click('#player-next');
+  await chips.nth(count - 3).click();
+  await chips.nth(2).click();
+  await page.click('#player-first');
+  const probe = await page.evaluate(() => new Promise((resolve) => setTimeout(() => resolve('alive'), 50)));
+  expect(probe).toBe('alive');
+  await settled(page);
+  await page.waitForFunction(() => window.__cubeApp.state.playerRun === null);
+  expect(await page.evaluate(() => window.__cubeApp.state.solution.position)).toBe(0);
+  expect(await faceMismatches(page)).toBe(0);
+  // Pause then Play immediately: one loop, ends solved.
+  await page.click('#player-play');
+  await page.waitForTimeout(150);
+  await page.click('#player-play');
+  await page.click('#player-play');
+  await page.waitForFunction(() => {
+    const s = window.__cubeApp.state.solution;
+    return s && s.position === s.moves.length && !window.__cubeApp.state.playing;
+  });
+  await settled(page);
+  expect(await isSolved(page)).toBe(true);
+});
+
+test('a solve request that never returns unlocks the page and restarts the worker', async ({ page }) => {
+  await open(page, '#' + encodeURIComponent(randomScrambleText(1)));
+  await page.waitForFunction(() => window.__cubeApp.state.history.length === 25);
+  await settled(page);
+  // Kill the worker just after the request is posted; the client's deadline must fire.
+  await page.evaluate(() => {
+    const client = window.__cubeApp.client;
+    const original = client.solve.bind(client);
+    client.solve = (stickers, options) => {
+      const p = original(stickers, { ...options, timeLimitMs: 100 });
+      client.worker.terminate();
+      return p;
+    };
+  });
+  await page.click('#solve');
+  await expect(page.locator('#solve-message')).toContainText('did not answer', { timeout: 30000 });
+  await expect(page.locator('#solve')).toHaveText('Solve');
+  await expect(page.locator('button[data-move="R"]')).toBeEnabled();
+  await page.waitForFunction(() => window.__cubeApp.client.ready, null, { timeout: 60000 });
+  await page.evaluate(() => { const c = window.__cubeApp.client; delete c.solve; });
+  await page.click('#solve');
+  await expect(page.locator('#solution')).toBeVisible({ timeout: 30000 });
 });

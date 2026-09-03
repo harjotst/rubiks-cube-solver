@@ -32,9 +32,14 @@ export class SolverClient {
       if (!this.ready) this.abandonWorker('The solver worker did not start in time.');
     }, 20000);
     worker.onerror = (event) => {
+      clearTimeout(failTimer);
+      const message = event.message || 'The solver worker failed.';
       if (!this.ready) {
-        clearTimeout(failTimer);
-        this.abandonWorker(event.message || 'The solver worker failed to load.');
+        this.abandonWorker(message);
+      } else {
+        // A crash mid-solve: fail the waiting requests and start a fresh worker.
+        this.failPending(message);
+        this.restartWorker();
       }
     };
     worker.onmessage = (event) => {
@@ -52,11 +57,31 @@ export class SolverClient {
         const entry = this.pending.get(msg.id);
         if (!entry) return;
         this.pending.delete(msg.id);
+        clearTimeout(entry.timer);
         if (msg.type === 'result') entry.resolve(msg.result);
         else entry.reject(new Error(msg.message));
       }
     };
     worker.postMessage({ type: 'init' });
+  }
+
+  /** Reject every request still waiting for the worker. */
+  failPending(message) {
+    for (const entry of this.pending.values()) {
+      clearTimeout(entry.timer);
+      entry.reject(new Error(message));
+    }
+    this.pending.clear();
+  }
+
+  /** Throw the worker away and build a new one; the page sees progress/ready again. */
+  restartWorker() {
+    if (this.worker) {
+      this.worker.terminate();
+      this.worker = null;
+    }
+    this.ready = false;
+    this.start();
   }
 
   abandonWorker(reason) {
@@ -70,12 +95,13 @@ export class SolverClient {
 
   async startFallback() {
     try {
-      const [{ buildTables }, { Solver }] = await Promise.all([import('../src/tables.js'), import('../src/solver.js')]);
+      const [{ buildTablesAsync }, { Solver }] = await Promise.all([import('../src/tables.js'), import('../src/solver.js')]);
       const started = performance.now();
-      // Yield between stages so the progress bar can paint.
-      const tables = await new Promise((resolve) => {
-        setTimeout(() => resolve(buildTables((stage, done, total) => this.hooks.onProgress(stage, done, total))), 30);
-      });
+      // Yield to the browser between stages so the progress bar can paint.
+      const tables = await buildTablesAsync(
+        (stage, done, total) => this.hooks.onProgress(stage, done, total),
+        () => new Promise((resolve) => setTimeout(resolve, 0))
+      );
       this.fallback = new Solver(tables);
       this.ready = true;
       this.hooks.onReady({
@@ -107,8 +133,17 @@ export class SolverClient {
       });
     }
     const id = this.nextId++;
+    // A search is bounded by its time limit; if the worker stays silent well
+    // past it, something has gone wrong and the page must not stay locked.
+    const grace = (Number(options && options.timeLimitMs) || 2000) + 10000;
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
+      const timer = setTimeout(() => {
+        if (!this.pending.has(id)) return;
+        this.pending.delete(id);
+        reject(new Error('The solver did not answer in time; it has been restarted.'));
+        this.restartWorker();
+      }, grace);
+      this.pending.set(id, { resolve, reject, timer });
       this.worker.postMessage({ type: 'solve', id, stickers: Array.from(stickers), options });
     });
   }

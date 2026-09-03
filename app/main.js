@@ -45,6 +45,8 @@ const state = {
   pending: [],
   running: null,
   fastForward: false,
+  /** identifies the jumpTo() / play() run currently in charge of the player */
+  playerRun: null,
 };
 
 const els = {
@@ -500,29 +502,42 @@ async function stepBack(duration = moveDuration()) {
   return true;
 }
 
+/**
+ * play() and jumpTo() both loop over awaits, so a second call must retire
+ * the first: each run owns a token and stops as soon as it is superseded.
+ */
 async function play() {
   if (state.playing) {
     state.playing = false;
+    state.playerRun = null;
     renderPlayer();
     return;
   }
   if (!state.solution || state.solution.position >= state.solution.moves.length) return;
+  const run = {};
+  state.playerRun = run;
   state.playing = true;
   renderPlayer();
-  while (state.playing && state.solution && (await stepForward())) {
+  while (state.playing && state.playerRun === run && state.solution && (await stepForward())) {
     await delay(reducedMotion.matches ? 250 : 120 / state.speed);
   }
-  state.playing = false;
+  if (state.playerRun === run) {
+    state.playing = false;
+    state.playerRun = null;
+  }
   renderPlayer();
 }
 
 async function jumpTo(target) {
   const s = state.solution;
   if (!s) return;
+  const run = {};
+  state.playerRun = run;
   state.playing = false;
   cube3d.finishAnimation();
-  while (s.position < target && (await stepForward(0)));
-  while (s.position > target && (await stepBack(0)));
+  while (state.playerRun === run && s.position < target && (await stepForward(0)));
+  while (state.playerRun === run && s.position > target && (await stepBack(0)));
+  if (state.playerRun === run) state.playerRun = null;
   renderPlayer();
 }
 
@@ -606,19 +621,24 @@ function buildPalette() {
   }
 }
 
-/** Single-key shortcuts only act when nothing else on the page has focus. */
+/**
+ * Single-key shortcuts. They stay out of text fields and links, and Space
+ * is left to whatever button has focus (a focused button is the normal
+ * state after any click, so the letters and arrows do work there).
+ */
 function onKeyDown(e) {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   if (!els.shortcuts.checked) return;
   const target = e.target;
-  const onControl = target && target.closest && target.closest('button, a, input, select, textarea, [tabindex]:not(#scene)');
-  if (onControl) return;
+  if (target && target.closest && target.closest('input, select, textarea, a')) return;
+  const onButton = !!(target && target.closest && target.closest('button'));
   if (state.paint) {
     if (/^[1-6]$/.test(e.key)) selectColour(Number(e.key) - 1);
     return;
   }
   if (state.solution) {
     if (e.key === ' ') {
+      if (onButton) return;
       e.preventDefault();
       play();
       return;

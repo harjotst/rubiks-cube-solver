@@ -97,53 +97,83 @@ function buildPruningTable(n1, n2, moveTable1, moveTable2, moves) {
 }
 
 /**
- * Build every table the solver needs. `onProgress(stage, done, total)` is
- * called between steps so a UI can show what is happening. Everything in
- * the result is plain data (typed arrays and numbers), so it can be posted
- * between a worker and the page unchanged.
+ * The build as a list of named steps over a shared context, so it can run
+ * synchronously (buildTables) or with a yield between steps
+ * (buildTablesAsync) for a progress bar on the main thread.
  */
-export function buildTables(onProgress = () => {}) {
-  const steps = 10;
-  let step = 0;
-  const report = (stage) => onProgress(stage, step++, steps);
+function buildSteps() {
+  const t = {};
+  return [
+    ['corner orientation moves', () => { t.twistMove = buildMoveTable(N_TWIST, getTwist, setTwist, 'corner', ALL_MOVES); }],
+    ['edge orientation moves', () => { t.flipMove = buildMoveTable(N_FLIP, getFlip, setFlip, 'edge', ALL_MOVES); }],
+    ['slice position moves', () => { t.sliceMove = buildMoveTable(N_SLICE, getSlice, setSlice, 'edge', ALL_MOVES); }],
+    ['corner permutation moves', () => { t.cornerPermMove = buildMoveTable(N_PERM, getCornerPerm, setCornerPerm, 'corner', ALL_MOVES); }],
+    ['edge permutation moves', () => { t.udEdgePermMove = buildMoveTable(N_PERM, getUDEdgePerm, setUDEdgePerm, 'edge', PHASE2_MOVES); }],
+    ['slice permutation moves', () => { t.sliceSortedMove = buildMoveTable(N_SLICE_SORTED, getSliceSorted, setSliceSorted, 'edge', PHASE2_MOVES); }],
+    ['corner orientation × slice distances', () => { t.twistSlice = buildPruningTable(N_TWIST, N_SLICE, t.twistMove, t.sliceMove, ALL_MOVES); }],
+    ['edge orientation × slice distances', () => { t.flipSlice = buildPruningTable(N_FLIP, N_SLICE, t.flipMove, t.sliceMove, ALL_MOVES); }],
+    ['corner permutation × slice distances', () => { t.cornerSlice = buildPruningTable(N_PERM, N_SLICE_SORTED, t.cornerPermMove, t.sliceSortedMove, PHASE2_MOVES); }],
+    ['edge permutation × slice distances', () => { t.edgeSlice = buildPruningTable(N_PERM, N_SLICE_SORTED, t.udEdgePermMove, t.sliceSortedMove, PHASE2_MOVES); }],
+    ['ready', () => t],
+  ];
+}
 
-  report('corner orientation moves');
-  const twistMove = buildMoveTable(N_TWIST, getTwist, setTwist, 'corner', ALL_MOVES);
-  report('edge orientation moves');
-  const flipMove = buildMoveTable(N_FLIP, getFlip, setFlip, 'edge', ALL_MOVES);
-  report('slice position moves');
-  const sliceMove = buildMoveTable(N_SLICE, getSlice, setSlice, 'edge', ALL_MOVES);
-  report('corner permutation moves');
-  const cornerPermMove = buildMoveTable(N_PERM, getCornerPerm, setCornerPerm, 'corner', ALL_MOVES);
-  report('edge permutation moves');
-  const udEdgePermMove = buildMoveTable(N_PERM, getUDEdgePerm, setUDEdgePerm, 'edge', PHASE2_MOVES);
-  report('slice permutation moves');
-  const sliceSortedMove = buildMoveTable(N_SLICE_SORTED, getSliceSorted, setSliceSorted, 'edge', PHASE2_MOVES);
-
-  report('corner orientation × slice distances');
-  const twistSlice = buildPruningTable(N_TWIST, N_SLICE, twistMove, sliceMove, ALL_MOVES);
-  report('edge orientation × slice distances');
-  const flipSlice = buildPruningTable(N_FLIP, N_SLICE, flipMove, sliceMove, ALL_MOVES);
-  report('corner permutation × slice distances');
-  const cornerSlice = buildPruningTable(N_PERM, N_SLICE_SORTED, cornerPermMove, sliceSortedMove, PHASE2_MOVES);
-  report('edge permutation × slice distances');
-  const edgeSlice = buildPruningTable(N_PERM, N_SLICE_SORTED, udEdgePermMove, sliceSortedMove, PHASE2_MOVES);
-  onProgress('ready', steps, steps);
-
+function assembleTables(t) {
   return {
-    twistMove, flipMove, sliceMove, cornerPermMove, udEdgePermMove, sliceSortedMove,
-    prunTwistSlice: twistSlice.table,
-    prunFlipSlice: flipSlice.table,
-    prunCornerSlice: cornerSlice.table,
-    prunEdgeSlice: edgeSlice.table,
+    twistMove: t.twistMove,
+    flipMove: t.flipMove,
+    sliceMove: t.sliceMove,
+    cornerPermMove: t.cornerPermMove,
+    udEdgePermMove: t.udEdgePermMove,
+    sliceSortedMove: t.sliceSortedMove,
+    prunTwistSlice: t.twistSlice.table,
+    prunFlipSlice: t.flipSlice.table,
+    prunCornerSlice: t.cornerSlice.table,
+    prunEdgeSlice: t.edgeSlice.table,
     /** Deepest entry of each pattern database (plain data, survives structured cloning). */
     depths: {
-      twistSlice: twistSlice.maxDepth,
-      flipSlice: flipSlice.maxDepth,
-      cornerSlice: cornerSlice.maxDepth,
-      edgeSlice: edgeSlice.maxDepth,
+      twistSlice: t.twistSlice.maxDepth,
+      flipSlice: t.flipSlice.maxDepth,
+      cornerSlice: t.cornerSlice.maxDepth,
+      edgeSlice: t.edgeSlice.maxDepth,
     },
   };
+}
+
+/**
+ * Build every table the solver needs. `onProgress(stage, done, total)` is
+ * called before each step (and once more with 'ready') so a UI can show
+ * what is happening. Everything in the result is plain data (typed arrays
+ * and numbers), so it can be posted between a worker and the page unchanged.
+ */
+export function buildTables(onProgress = () => {}) {
+  const steps = buildSteps();
+  const total = steps.length - 1;
+  let context = null;
+  steps.forEach(([stage, run], i) => {
+    onProgress(stage, i, total);
+    const out = run();
+    if (stage === 'ready') context = out;
+  });
+  return assembleTables(context);
+}
+
+/**
+ * The same build, awaiting `yieldFn()` between steps so a browser can paint
+ * progress when the tables have to be built on the main thread.
+ */
+export async function buildTablesAsync(onProgress = () => {}, yieldFn = () => Promise.resolve()) {
+  const steps = buildSteps();
+  const total = steps.length - 1;
+  let context = null;
+  for (let i = 0; i < steps.length; i++) {
+    const [stage, run] = steps[i];
+    onProgress(stage, i, total);
+    await yieldFn();
+    const out = run();
+    if (stage === 'ready') context = out;
+  }
+  return assembleTables(context);
 }
 
 /** Names and sizes of the arrays buildTables() returns, for validation. */

@@ -695,6 +695,7 @@ select:focus {
   overflow-x: auto;
 }
 .net {
+  --cell: clamp(18px, 3.4vw, 26px);
   --cell: clamp(20px, calc((100cqw - 42px) / 12), 26px);
   display: grid;
   grid-template-columns: repeat(4, auto);
