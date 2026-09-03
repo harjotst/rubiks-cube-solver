@@ -164,9 +164,10 @@ puts the stickers.
 
 ## Deployment
 
-Every push to `main` runs the tests and, when they pass, builds `dist/` and
-deploys it to GitHub Pages, which serves it at
-<https://harjotst.github.io/rubiks-cube-solver/>.
+Every push to `main` runs the tests and, when they pass, publishes `dist/` to
+the `gh-pages` branch. GitHub Pages serves that branch at
+<https://harjotst.github.io/rubiks-cube-solver/> (Settings → Pages → Deploy
+from a branch → `gh-pages`, once per repository).
 
 ## From the original version
 
