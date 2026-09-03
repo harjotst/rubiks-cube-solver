@@ -1,0 +1,26 @@
+{
+  "name": "rubiks-cube-solver",
+  "version": "2.0.0",
+  "description": "A Rubik's cube solver that runs entirely in the browser: two-phase IDA* over pattern databases generated on page load, with an interactive 3D cube.",
+  "type": "module",
+  "private": true,
+  "homepage": "https://harjotst.github.io/rubiks-cube-solver/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/harjotst/rubiks-cube-solver.git"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\"",
+    "test:e2e": "playwright test",
+    "bench": "node scripts/bench.mjs",
+    "serve": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}

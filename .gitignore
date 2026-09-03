@@ -1,11 +1,5 @@
-**/.venv/
-**/.DS_Store/
-**/.build/
-**/.vscode/
-**/.idea/
-**/__pycache__/
-**/heuristics/
-**/else.txt
-**/solver/cmake-build-debug
-**/build/
-**/solver/.clang-format
+node_modules/
+dist/
+test-results/
+playwright-report/
+.DS_Store
