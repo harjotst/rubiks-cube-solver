@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rubik's Cube Solver — Harjot Tathgur</title>
+    <meta
+      name="description"
+      content="Solve any 3×3 Rubik's cube in about twenty moves, entirely in your browser. Scramble the 3D cube or paint in your own, and step through the solution."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f6f2eb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#161514" media="(prefers-color-scheme: dark)" />
+    <meta property="og:title" content="Rubik's Cube Solver" />
+    <meta property="og:description" content="Solve any 3×3 Rubik's cube in about twenty moves, entirely in your browser. Scramble the 3D cube or paint in your own, and step through the solution." />
+    <meta property="og:type" content="website" />
+    <!-- Apply a stored theme before first paint so there is no flash. -->
+    <script>
+      (function () {
+        var root = document.documentElement;
+        try {
+          var t = localStorage.getItem("theme");
+          if (t === "light" || t === "dark") root.setAttribute("data-theme", t);
+        } catch (e) {}
+        root.classList.add("js");
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231c1917'/%3E%3Cg%3E%3Crect x='8' y='8' width='14' height='14' rx='3' fill='%23ffd21f'/%3E%3Crect x='25' y='8' width='14' height='14' rx='3' fill='%23e0243a'/%3E%3Crect x='42' y='8' width='14' height='14' rx='3' fill='%231e6ff5'/%3E%3Crect x='8' y='25' width='14' height='14' rx='3' fill='%2317b26a'/%3E%3Crect x='25' y='25' width='14' height='14' rx='3' fill='%23ff8c1a'/%3E%3Crect x='42' y='25' width='14' height='14' rx='3' fill='%23f7f5f0'/%3E%3Crect x='8' y='42' width='14' height='14' rx='3' fill='%231e6ff5'/%3E%3Crect x='25' y='42' width='14' height='14' rx='3' fill='%23ffd21f'/%3E%3Crect x='42' y='42' width='14' height='14' rx='3' fill='%23e0243a'/%3E%3C/g%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <svg class="sprite" aria-hidden="true" focusable="false">
+      <symbol id="i-github" viewBox="0 0 24 24">
+        <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+      </symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 17 17 7M8 7h9v9" />
+      </symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4.2" />
+        <path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7 7 17M17 7l1.7-1.7" />
+      </symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z" />
+      </symbol>
+    </svg>
+
+    <header class="site-header">
+      <nav class="nav container" aria-label="Primary">
+        <a class="brand" href="./" aria-label="Rubik's Cube Solver, back to top">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-name">Rubik's Cube Solver</span>
+        </a>
+        <ul class="nav-links" role="list">
+          <li><a href="#how">How it works</a></li>
+          <li><a href="https://github.com/harjotst/rubiks-cube-solver" target="_blank" rel="noopener">Source<span class="visually-hidden"> (opens in a new tab)</span></a></li>
+          <li><a href="https://harjotst.github.io/" target="_blank" rel="noopener">Harjot Tathgur<span class="visually-hidden"> (opens in a new tab)</span></a></li>
+        </ul>
+        <div class="nav-actions">
+          <button class="icon-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark theme">
+            <svg class="icon icon-moon" aria-hidden="true"><use href="#i-moon" /></svg>
+            <svg class="icon icon-sun" aria-hidden="true"><use href="#i-sun" /></svg>
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero container" aria-labelledby="hero-title">
+        <p class="eyebrow"><span class="pulse" aria-hidden="true"></span>Runs entirely in your browser</p>
+        <h1 id="hero-title">Solve any Rubik's cube in about twenty moves<span class="accent-dot" aria-hidden="true">.</span></h1>
+        <p class="lede">
+          Scramble the cube, or paint in the colours of the one on your desk, and step through a solution.
+          Under the hood is a two-stage search guided by four lookup tables that this page builds the moment
+          it loads; <a href="#how">how it works</a> is explained below.
+        </p>
+        <noscript><p class="message error noscript">This solver runs in your browser and needs JavaScript enabled.</p></noscript>
+      </section>
+
+      <div class="workspace container">
+        <section class="panel panel-cube" aria-labelledby="cube-title">
+          <div class="panel-head">
+            <h2 id="cube-title">The cube</h2>
+            <span class="status-pill" id="cube-status" data-kind="solved">Solved</span>
+          </div>
+          <div class="scene" id="scene" tabindex="0" role="img" aria-label="Three-dimensional Rubik's cube. Drag to rotate the view; with keyboard shortcuts on, press U D R L F B to turn a face."></div>
+          <p class="hint">
+            Drag to look around. Keyboard: U D R L F B turn a face (hold Shift for anticlockwise), M E S turn a middle
+            slice, x y z rotate the whole cube. With a solution open, Space plays and ← → step through it.
+          </p>
+          <label class="shortcuts-toggle"><input type="checkbox" id="shortcuts" checked /> Keyboard shortcuts</label>
+          <div class="move-groups">
+            <div class="move-grid" id="moves" role="group" aria-label="Face turns"></div>
+            <div class="move-grid move-grid-rotations" id="rotations" role="group" aria-label="Cube rotations"></div>
+          </div>
+        </section>
+
+        <section class="panel panel-controls">
+          <section class="block" aria-labelledby="scramble-title">
+            <h2 id="scramble-title">Scramble</h2>
+            <form class="scramble-form" id="scramble-form">
+              <label class="visually-hidden" for="scramble-input">Moves to apply</label>
+              <input
+                id="scramble-input"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="R U R' U' F2 …"
+                aria-describedby="scramble-message"
+              />
+              <button class="btn btn-primary" type="submit">Apply</button>
+            </form>
+            <p class="message" id="scramble-message" role="status" hidden></p>
+            <div class="btn-row">
+              <button class="btn" id="random-scramble" type="button">Random scramble</button>
+              <button class="btn" id="undo-move" type="button" disabled>Undo</button>
+              <button class="btn btn-ghost" id="reset-cube" type="button">Reset</button>
+            </div>
+          </section>
+
+          <section class="block" aria-labelledby="paint-title">
+            <div class="block-head">
+              <h2 id="paint-title">Your cube</h2>
+              <button class="btn btn-small" id="paint-start" type="button">Paint your own</button>
+            </div>
+            <div class="net-wrap">
+              <div id="net"></div>
+            </div>
+            <div id="paint-tools" hidden>
+              <div class="palette" id="palette" role="group" aria-label="Sticker colours"></div>
+              <div class="btn-row">
+                <button class="btn btn-primary" id="paint-use" type="button">Use this cube</button>
+                <button class="btn" id="paint-clear" type="button">Blank all</button>
+                <button class="btn btn-ghost" id="paint-cancel" type="button">Cancel</button>
+              </div>
+            </div>
+            <p class="message" id="paint-message" role="status" hidden></p>
+          </section>
+
+          <section class="block" aria-labelledby="solve-title">
+            <h2 id="solve-title">Solution</h2>
+            <div class="solve-row">
+              <label class="select-label" for="effort">Search</label>
+              <select id="effort">
+                <option value="quick">Quick · aims for 22 moves</option>
+                <option value="balanced" selected>Balanced · aims for 20 moves</option>
+                <option value="thorough">Thorough · aims for 19 moves</option>
+              </select>
+              <button class="btn btn-primary btn-solve" id="solve" type="button" disabled>Solve</button>
+            </div>
+            <p class="solver-status" id="solver-status" aria-live="polite">Starting the solver…</p>
+            <progress class="solver-progress" id="solver-progress" max="10" value="0" aria-labelledby="solver-status" hidden></progress>
+            <p class="message" id="solve-message" role="status" hidden></p>
+            <div class="solution" id="solution" hidden>
+              <div class="solution-head">
+                <p class="solution-stats" id="solution-stats" data-position="0 / 0"></p>
+                <button class="btn btn-small btn-ghost" id="copy-solution" type="button">Copy</button>
+              </div>
+              <div class="solution-moves" id="solution-moves" role="group" aria-label="Solution moves"></div>
+              <div class="player" role="group" aria-label="Solution player">
+                <div class="transport">
+                  <button class="btn btn-small" id="player-first" type="button" aria-label="Back to the start">⏮</button>
+                  <button class="btn btn-small" id="player-prev" type="button" aria-label="Previous move">◀</button>
+                  <button class="btn btn-small btn-primary" id="player-play" type="button">Play</button>
+                  <button class="btn btn-small" id="player-next" type="button" aria-label="Next move">▶</button>
+                  <button class="btn btn-small" id="player-last" type="button" aria-label="Skip to the end">⏭</button>
+                </div>
+                <span class="speed">
+                  <label class="speed-label" for="speed">Speed</label>
+                  <input id="speed" type="range" min="0.5" max="3" step="0.25" value="1" />
+                </span>
+              </div>
+            </div>
+            <p class="visually-hidden" id="announcer" role="status"></p>
+          </section>
+        </section>
+      </div>
+
+      <section class="section container" id="how" aria-labelledby="how-title">
+        <header class="section-head">
+          <p class="eyebrow">How it works</p>
+          <h2 id="how-title">Two small searches instead of one enormous one</h2>
+        </header>
+        <div class="how-grid">
+          <article class="card">
+            <h3>Pattern databases, built on the fly</h3>
+            <p>
+              A breadth-first search from the solved cube records, for every value of a coordinate such as
+              "how the corners are twisted", the exact number of moves needed to fix it. Four such tables,
+              about four million entries in total, are generated by a Web Worker in roughly a second when the
+              page loads. Each one is a lower bound on the moves a full solution needs, which is what lets
+              the search skip almost everything.
+            </p>
+          </article>
+          <article class="card">
+            <h3>IDA*, twice</h3>
+            <p>
+              Phase one uses iterative-deepening A* to orient every piece and bring the four middle-layer
+              edges home, reaching the subgroup where only U, D, R2, L2, F2 and B2 are needed. Phase two
+              finishes the job inside that subgroup. Every phase-one solution is tried in turn, and the
+              shortest total wins: usually twenty or twenty-one moves, most often in a fraction of a second
+              and never longer than the time budget of the setting you chose.
+            </p>
+          </article>
+          <article class="card">
+            <h3>From C++ and Python to the browser</h3>
+            <p>
+              The first version of this solver was Korf's optimal algorithm in C++, driven by three pattern
+              databases with 173 million entries that two Python scripts took hours to build. The cube model,
+              the sticker-to-piece extraction and the IDA* search were ported to JavaScript and restructured
+              so the same idea fits in a browser tab. The
+              <a href="https://github.com/harjotst/rubiks-cube-solver#readme" target="_blank" rel="noopener">README<span class="visually-hidden"> (opens in a new tab)</span></a>
+              walks through the design and the tests behind it.
+            </p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-row">
+        <p>© 2026 Harjot Singh Tathgur</p>
+        <p class="footer-note">Plain HTML, CSS and JavaScript. No frameworks, no build step, no server.</p>
+        <div class="footer-links">
+          <a class="footer-link" href="https://harjotst.github.io/" target="_blank" rel="noopener">
+            harjotst.github.io<span class="visually-hidden"> (opens in a new tab)</span>
+          </a>
+          <a class="footer-link" href="https://github.com/harjotst/rubiks-cube-solver" target="_blank" rel="noopener">
+            <svg class="icon" aria-hidden="true"><use href="#i-github" /></svg>
+            harjotst/rubiks-cube-solver<span class="visually-hidden"> (opens in a new tab)</span>
+          </a>
+        </div>
+      </div>
+    </footer>
+    <script type="module" src="app/main.js"></script>
+  </body>
+</html>
